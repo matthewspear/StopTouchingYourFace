@@ -1,0 +1,40 @@
+# general
+--allman false
+--binarygrouping none
+--closingparen balanced
+--commas always
+--conflictmarkers reject
+--decimalgrouping none
+--elseposition same-line
+--empty void
+--exponentcase lowercase
+--exponentgrouping disabled
+--fractiongrouping disabled
+--fragment false
+--header ignore
+--hexgrouping none
+--hexliteralcase uppercase
+--ifdef indent
+--importgrouping alphabetized
+--indent 4
+--indentcase false
+--linebreaks lf
+--octalgrouping none
+--operatorfunc spaced
+--patternlet hoist
+--ranges spaced
+--self remove
+--selfrequired
+--semicolons never
+--stripunusedargs always
+--trailingclosures
+--trimwhitespace always
+--wraparguments before-first
+--wrapcollections before-first
+
+# file options
+--exclude Carthage
+
+# rules
+--disable andOperator,anyObjectProtocol
+
