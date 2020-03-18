@@ -32,5 +32,7 @@
 	<true/>
 	<key>NSSupportsSuddenTermination</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera required to track you touching your face</string>
 </dict>
 </plist>
