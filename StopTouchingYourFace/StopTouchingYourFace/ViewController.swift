@@ -30,9 +30,7 @@ class ViewController: NSViewController {
 
     var device: AVCaptureDevice?
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
+    fileprivate func setupPermissions() {
         /*
          Check the video authorization status. Video access is required and audio
          access is optional. If the user denies audio access, AVCam won't
@@ -68,6 +66,12 @@ class ViewController: NSViewController {
             // The user has previously denied access.
             setupResult = .notAuthorized
         }
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        setupPermissions()
 
         /*
          Setup the capture session.
@@ -96,7 +100,7 @@ class ViewController: NSViewController {
 
         // Add video input.
         do {
-            // select main wide angle webcam
+            // select main wide angle webcam as input
             let devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: .front)
 
             let videoDeviceInput = try AVCaptureDeviceInput(device: devices.devices.first!)
@@ -105,6 +109,8 @@ class ViewController: NSViewController {
                 session.addInput(videoDeviceInput)
                 self.videoDeviceInput = videoDeviceInput
             }
+
+            // Handle displaying preview
 
             previewLayer = AVCaptureVideoPreviewLayer(session: session)
 
