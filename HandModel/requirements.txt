@@ -1,0 +1,6 @@
+tensorflow==1.14
+onnx
+onnx_coreml
+onnx_tf
+torch
+

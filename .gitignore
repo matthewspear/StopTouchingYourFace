@@ -72,3 +72,8 @@ fastlane/test_output
 
 .DS_Store
 
+# Annotation Files
+
+HandModel/ResizeData.playground/Resources/annotations/*.xml
+HandModel/ResizeData.playground/Resources/images_original_size/*.jpg
+
