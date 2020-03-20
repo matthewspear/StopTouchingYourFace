@@ -707,10 +707,33 @@
                 <viewController id="XfG-lQ-9wD" customClass="ViewController" customModule="StopTouchingYourFace" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" id="m2S-Jp-Qdl">
                         <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="GlZ-xZ-pym">
                                 <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
+                                <subviews>
+                                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="kmX-q0-xks" customClass="ImageAspectFillView" customModule="StopTouchingYourFace" customModuleProvider="target">
+                                        <rect key="frame" x="388" y="8" width="84" height="84"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="84" id="42u-KQ-UuE"/>
+                                            <constraint firstAttribute="width" secondItem="kmX-q0-xks" secondAttribute="height" id="YvA-an-0Pz"/>
+                                        </constraints>
+                                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="MiK-P8-xs8"/>
+                                    </imageView>
+                                    <customView translatesAutoresizingMaskIntoConstraints="NO" id="KdS-cT-hKN">
+                                        <rect key="frame" x="455" y="245" width="17" height="17"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="KdS-cT-hKN" secondAttribute="height" id="Kbp-fb-Let"/>
+                                        </constraints>
+                                    </customView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="kmX-q0-xks" secondAttribute="bottom" constant="8" id="FFy-zg-ijs"/>
+                                    <constraint firstAttribute="trailing" secondItem="kmX-q0-xks" secondAttribute="trailing" constant="8" id="RZU-BR-KoJ"/>
+                                    <constraint firstItem="KdS-cT-hKN" firstAttribute="width" secondItem="kmX-q0-xks" secondAttribute="width" multiplier="0.2" id="VZ8-ZQ-Xsy"/>
+                                    <constraint firstItem="KdS-cT-hKN" firstAttribute="top" secondItem="GlZ-xZ-pym" secondAttribute="top" constant="8" id="tT4-dJ-Wbl"/>
+                                    <constraint firstAttribute="trailing" secondItem="KdS-cT-hKN" secondAttribute="trailing" constant="8" id="xym-jH-5ss"/>
+                                </constraints>
                             </customView>
                         </subviews>
                         <constraints>
@@ -721,6 +744,8 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="maskImageView" destination="kmX-q0-xks" id="cnL-HX-MeP"/>
+                        <outlet property="movementIndicator" destination="KdS-cT-hKN" id="Mu5-Am-iiA"/>
                         <outlet property="previewView" destination="GlZ-xZ-pym" id="gsg-ZB-for"/>
                     </connections>
                 </viewController>

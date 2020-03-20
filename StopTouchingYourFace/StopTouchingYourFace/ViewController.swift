@@ -18,6 +18,8 @@ private enum SessionSetupResult {
 
 class ViewController: NSViewController {
     @IBOutlet var previewView: NSView!
+    @IBOutlet var maskImageView: ImageAspectFillView!
+    @IBOutlet var movementIndicator: NSView!
 
     // AVCapture Session variables
     var session = AVCaptureSession()
@@ -41,16 +43,36 @@ class ViewController: NSViewController {
     private let sessionQueue = DispatchQueue(label: "session queue")
     private var setupResult: SessionSetupResult = .success
 
-    // Vision requests
-    private var detectionRequests: [VNDetectFaceRectanglesRequest]?
-    private var trackingRequests: [VNTrackObjectRequest]?
+    var lastFeaturePrint: VNFeaturePrintObservation?
 
-    lazy var sequenceRequestHandler = VNSequenceRequestHandler()
+    var lastMovement = Date.timeIntervalSinceReferenceDate
+    var lastFrame = Date.timeIntervalSinceReferenceDate
+
+    var audioPlayer: AVAudioPlayer?
+
+    // parameters
+    var displayPreview = true
+
+    var frameRate = 2.0 // per second
+
+    let slowFrameRate = 5.0 // per second
+    let fastFrameRate = 15.0 // per second
+
+    let imageDistanceThreshold: Float = 7.5 // sensitivity (the lower the more sensitive)
+
+    let movementCoolOff = 3.0 // seconds
+    let touchCoolOff = 5.0 // seconds
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         setupPermissions()
+        setupAudioPlayer()
+
+        movementIndicator.backgroundColor = #colorLiteral(red: 0.8549019694, green: 0.250980407, blue: 0.4784313738, alpha: 1)
+        movementIndicator.layer?.cornerRadius = movementIndicator.frame.width / 2.0
+        movementIndicator.alphaValue = 0.8
+        maskImageView.alphaValue = 0.8
 
         /*
          Setup the capture session.
@@ -64,11 +86,12 @@ class ViewController: NSViewController {
          */
         sessionQueue.async {
             self.configureSession()
-//            self.prepareVisionRequest()
-            DispatchQueue.main.async {
-                self.setupVisionDrawingLayers()
-            }
 
+            if self.displayPreview {
+                DispatchQueue.main.async {
+                    self.setupVisionDrawingLayers()
+                }
+            }
             self.session.startRunning()
         }
     }
@@ -111,6 +134,16 @@ class ViewController: NSViewController {
         }
     }
 
+    private func setupAudioPlayer() {
+        let fileURL = URL(fileReferenceLiteralResourceName: "buzzer.wav")
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
+            audioPlayer?.prepareToPlay()
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
+    }
+
     // MARK: Session
 
     private func configureSession() {
@@ -128,6 +161,11 @@ class ViewController: NSViewController {
 
             let device = devices.devices.first!
 
+//            try device.lockForConfiguration()
+//            device.activeVideoMinFrameDuration = CMTimeMake(value: 1, timescale: 1)
+//            device.activeVideoMaxFrameDuration = CMTimeMake(value: 1, timescale: 1)
+//            device.unlockForConfiguration()
+
             let videoDeviceInput = try AVCaptureDeviceInput(device: device)
 
             if session.canAddInput(videoDeviceInput) {
@@ -138,12 +176,12 @@ class ViewController: NSViewController {
             // add output
 
             let videoDataOutput = AVCaptureVideoDataOutput()
-            videoDataOutput.alwaysDiscardsLateVideoFrames = true
 
             // Create a serial dispatch queue used for the sample buffer delegate as well as when a still image is captured.
             // A serial dispatch queue must be used to guarantee that video frames will be delivered in order.
-            let videoDataOutputQueue = DispatchQueue(label: "com.example.apple-samplecode.VisionFaceTrack")
+            let videoDataOutputQueue = DispatchQueue(label: "uk.co.matthewspear.VisionFaceTrack")
             videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
+            videoDataOutput.alwaysDiscardsLateVideoFrames = true
 
             if session.canAddOutput(videoDataOutput) {
                 session.addOutput(videoDataOutput)
@@ -158,36 +196,31 @@ class ViewController: NSViewController {
 
             let dimensions = device.activeFormat.formatDescription.dimensions
 
+            print(device.activeFormat.videoSupportedFrameRateRanges)
+
             captureDeviceResolution = CGSize(width: Int(dimensions.width), height: Int(dimensions.height))
 
             print(captureDeviceResolution)
 
             // Handle displaying preview
 
-            previewLayer = AVCaptureVideoPreviewLayer(session: session)
+            if displayPreview {
+                previewLayer = AVCaptureVideoPreviewLayer(session: session)
 
-            previewLayer?.name = "CameraPreview"
-            previewLayer?.backgroundColor = NSColor.black.cgColor
-            previewLayer?.videoGravity = .resizeAspectFill
+                previewLayer?.name = "CameraPreview"
+                previewLayer?.backgroundColor = NSColor.black.cgColor
+                previewLayer?.videoGravity = .resizeAspectFill
 
-            if previewLayer?.connection?.isVideoMirroringSupported ?? false {
-                previewLayer?.connection?.automaticallyAdjustsVideoMirroring = false
-                previewLayer?.connection?.isVideoMirrored = true
-            }
+                if previewLayer?.connection?.isVideoMirroringSupported ?? false {
+                    previewLayer?.connection?.automaticallyAdjustsVideoMirroring = false
+                    previewLayer?.connection?.isVideoMirrored = true
+                }
 
-            DispatchQueue.main.async {
-//                if let previewRootLayer = self.previewView?.layer {
-//                    self.rootLayer = previewRootLayer
-//
-//                    previewRootLayer.masksToBounds = true
-//                    self.previewLayer?.frame = previewRootLayer.bounds
-//                    previewRootLayer.addSublayer(self.previewLayer!)
-//                }
-
-                self.rootLayer = self.previewView.layer
-                self.previewView.layer?.addSublayer(self.previewLayer!)
-                self.previewLayer?.frame = self.previewView.frame
-                self.session.startRunning()
+                DispatchQueue.main.async {
+                    self.rootLayer = self.previewView.layer
+                    self.previewView.layer?.addSublayer(self.previewLayer!)
+                    self.previewLayer?.frame = self.previewView.frame
+                }
             }
 
         } catch {
@@ -208,53 +241,6 @@ class ViewController: NSViewController {
 }
 
 extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-//    func captureOutput(_: AVCaptureOutput, didOutput _: CMSampleBuffer, from _: AVCaptureConnection) {
-//        print("Frame")
-//    }
-//
-//    func captureOutput(_: AVCaptureOutput, didDrop _: CMSampleBuffer, from _: AVCaptureConnection) {
-//        print("Dropped a frame...")
-//    }
-
-    // MARK: Performing Vision Requests
-
-    /// - Tag: WriteCompletionHandler
-    private func prepareVisionRequest() {
-//        trackingRequests = []
-        var requests = [VNTrackObjectRequest]()
-
-        let faceDetectionRequest = VNDetectFaceRectanglesRequest(
-            completionHandler: { request, error in
-
-                if error != nil {
-                    print("FaceDetection error: \(String(describing: error)).")
-                }
-
-                guard let faceDetectionRequest = request as? VNDetectFaceRectanglesRequest,
-                    let results = faceDetectionRequest.results as? [VNFaceObservation] else {
-                    return
-                }
-                DispatchQueue.main.async {
-                    // Add the observations to the tracking list
-                    for observation in results {
-                        let faceTrackingRequest = VNTrackObjectRequest(detectedObjectObservation: observation)
-                        requests.append(faceTrackingRequest)
-                    }
-                    self.trackingRequests = requests
-                }
-            }
-        )
-
-        // Start with detection.  Find face, then track it.
-        detectionRequests = [faceDetectionRequest]
-
-        sequenceRequestHandler = VNSequenceRequestHandler()
-
-        DispatchQueue.main.async {
-            self.setupVisionDrawingLayers()
-        }
-    }
-
     // MARK: Drawing Vision Observations
 
     private func setupVisionDrawingLayers() {
@@ -332,32 +318,9 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
         let videoPreviewRect = previewLayer.layerRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1))
 
-        var rotation: CGFloat
-        var scaleX: CGFloat
-        var scaleY: CGFloat
-
-        // Rotate the layer into screen orientation.
-        //        switch UIDevice.current.orientation {
-        //        case .portraitUpsideDown:
-        //            rotation = 180
-        //            scaleX = videoPreviewRect.width / captureDeviceResolution.width
-        //            scaleY = videoPreviewRect.height / captureDeviceResolution.height
-        //
-        //        case .landscapeLeft:
-        //            rotation = 90
-        //            scaleX = videoPreviewRect.height / captureDeviceResolution.width
-        //            scaleY = scaleX
-        //
-        //        case .landscapeRight:
-        //            rotation = -90
-        //            scaleX = videoPreviewRect.height / captureDeviceResolution.width
-        //            scaleY = scaleX
-        //
-        //        default:
-        rotation = 0
-        scaleX = videoPreviewRect.width / captureDeviceResolution.width
-        scaleY = videoPreviewRect.height / captureDeviceResolution.height
-        //        }
+        let rotation: CGFloat = 0.0
+        let scaleX = videoPreviewRect.width / captureDeviceResolution.width
+        let scaleY = videoPreviewRect.height / captureDeviceResolution.height
 
         // Scale and mirror the image to ensure upright presentation.
         let affineTransform = CGAffineTransform(rotationAngle: radiansForDegrees(rotation))
@@ -459,6 +422,9 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     /// - Tag: PerformRequests
     // Handle delegate method callback on receiving a sample buffer.
     public func captureOutput(_: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from _: AVCaptureConnection) {
+//        print(1.0 / (Date.timeIntervalSinceReferenceDate - lastFrame))
+        if (Date.timeIntervalSinceReferenceDate - lastFrame) < (1 / frameRate) { return }
+
         var requestHandlerOptions: [VNImageOption: AnyObject] = [:]
 
         let cameraIntrinsicData = CMGetAttachment(sampleBuffer, key: kCMSampleBufferAttachmentKey_CameraIntrinsicMatrix, attachmentModeOut: nil)
@@ -471,40 +437,131 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
 
-        let exifOrientation = CGImagePropertyOrientation.down
+        // feature printing
+        print(abs(lastMovement - Date.timeIntervalSinceReferenceDate))
 
-        // Perform face landmark tracking on detected faces.
-        var faceRectangleRequests = [VNDetectFaceRectanglesRequest]()
+        if Date.timeIntervalSinceReferenceDate > lastMovement {
+            let startFeature = Date.timeIntervalSinceReferenceDate
 
-        let faceRectangleRequest = VNDetectFaceRectanglesRequest { request, error in
-            if error != nil {
-                print("FaceLandmarks error: \(String(describing: error)).")
+            let imageRequestHandler = VNImageRequestHandler(
+                cvPixelBuffer: pixelBuffer,
+                orientation: .down,
+                options: requestHandlerOptions
+            )
+
+            var distance = Float(0)
+
+            let request = VNGenerateImageFeaturePrintRequest()
+            do {
+                try imageRequestHandler.perform([request])
+                let result = request.results?.first as? VNFeaturePrintObservation
+
+                if let lastFeaturePrint = lastFeaturePrint {
+                    try result?.computeDistance(&distance, to: lastFeaturePrint)
+                }
+                lastFeaturePrint = result
+            } catch let error as NSError {
+                NSLog("Failed to perform FaceLandmarkRequest: %@", error)
             }
 
-            guard let rectangleRequest = request as? VNDetectFaceRectanglesRequest,
-                let results = rectangleRequest.results as? [VNFaceObservation] else {
+//            print("Distance = \(distance)")
+
+            if distance < imageDistanceThreshold {
+                // Ensure this is in the correct position for frame rate to work
+                lastFrame = Date.timeIntervalSinceReferenceDate
+                frameRate = slowFrameRate
+                DispatchQueue.main.async {
+                    self.movementIndicator.backgroundColor = #colorLiteral(red: 0.8549019694, green: 0.250980407, blue: 0.4784313738, alpha: 1)
+                }
                 return
             }
 
-            print(results)
+            print("Movement!")
+//            audioPlayer?.prepareToPlay()
+            lastMovement = Date.timeIntervalSinceReferenceDate + movementCoolOff
+            frameRate = fastFrameRate
+            lastFeaturePrint = nil
 
             DispatchQueue.main.async {
-                self.drawFaceObservations(results)
+                self.movementIndicator.backgroundColor = #colorLiteral(red: 0.5843137503, green: 0.8235294223, blue: 0.4196078479, alpha: 1)
             }
         }
 
-        faceRectangleRequests.append(faceRectangleRequest)
+        // CoreML Vision
 
-        let imageRequestHandler = VNImageRequestHandler(
+        let startCoreML = Date.timeIntervalSinceReferenceDate
+
+        let visionRequestHandler = VNImageRequestHandler(
             cvPixelBuffer: pixelBuffer,
-            orientation: exifOrientation,
+            orientation: .upMirrored,
             options: requestHandlerOptions
         )
 
+        var predictionRequest: VNCoreMLRequest?
+
         do {
-            try imageRequestHandler.perform(faceRectangleRequests)
+            let model = try VNCoreMLModel(for: HandModel().model)
+            predictionRequest = VNCoreMLRequest(model: model)
+            predictionRequest!.imageCropAndScaleOption = .centerCrop
+
+            try visionRequestHandler.perform([predictionRequest!])
+
+            guard let observation = predictionRequest!.results?.first as? VNPixelBufferObservation else {
+                fatalError("Unexpected result type from VNCoreMLRequest")
+            }
+
+            func pixelFrom(x: Int, y: Int, movieFrame: CVPixelBuffer) -> Int {
+                let baseAddress = CVPixelBufferGetBaseAddress(movieFrame)
+                let bytesPerRow = CVPixelBufferGetBytesPerRow(movieFrame)
+                let buffer = baseAddress!.assumingMemoryBound(to: UInt8.self)
+                let index = x * 4 + y * bytesPerRow
+                return Int(buffer[index])
+            }
+
+            CVPixelBufferLockBaseAddress(observation.pixelBuffer, [])
+            var sum: Int = 0
+            let threshold = Int(112 * 112 * 10)
+            var faceTouched = false
+
+            // work bottom up
+            for row in 0 ..< 112 {
+                for col in 0 ..< 112 {
+                    sum += pixelFrom(x: 112 - row, y: col, movieFrame: observation.pixelBuffer)
+
+                    if sum >= threshold {
+                        faceTouched = true
+                        break
+                    }
+                }
+            }
+
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+
+            if faceTouched {
+                print("Face!")
+                AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert)
+//                audioPlayer?.play()
+                lastMovement = Date.timeIntervalSinceReferenceDate + touchCoolOff
+            } else {
+                audioPlayer?.stop()
+            }
+
+            if displayPreview {
+                let ciImage = CIImage(cvImageBuffer: observation.pixelBuffer)
+                let context = CIContext(options: nil)
+                if let cgImage = context.createCGImage(ciImage, from: CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(observation.pixelBuffer), height: CVPixelBufferGetHeight(observation.pixelBuffer))) {
+                    DispatchQueue.main.async {
+                        self.maskImageView.image = NSImage(cgImage: cgImage, size: NSSize(width: 112.0, height: 112.0))
+                    }
+//                    print(1.0 / (Date.timeIntervalSinceReferenceDate - startCoreML))
+                }
+            }
+
         } catch let error as NSError {
             NSLog("Failed to perform FaceLandmarkRequest: %@", error)
         }
+
+        // Ensure this is in the correct position for frame rate to work
+        lastFrame = Date.timeIntervalSinceReferenceDate
     }
 }
