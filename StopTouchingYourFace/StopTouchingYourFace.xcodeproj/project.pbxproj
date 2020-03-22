@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		340148562427864500B3F284 /* sound.wav in Resources */ = {isa = PBXBuildFile; fileRef = 340148552427864500B3F284 /* sound.wav */; };
 		521EF525242469A10014D511 /* Utillities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521EF524242469A10014D511 /* Utillities.swift */; };
 		52F30784242293B90015DE93 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F30783242293B90015DE93 /* AppDelegate.swift */; };
 		52F30786242293B90015DE93 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F30785242293B90015DE93 /* ViewController.swift */; };
@@ -14,10 +15,10 @@
 		52F3078B242293BB0015DE93 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 52F30789242293BB0015DE93 /* Main.storyboard */; };
 		52F3079B242424BD0015DE93 /* HandModel.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 52F3079A242424BD0015DE93 /* HandModel.mlmodel */; };
 		52F7D0F62424381300C9B563 /* ImageAspectFillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F7D0F52424381300C9B563 /* ImageAspectFillView.swift */; };
-		52F7D0F824245E5300C9B563 /* buzzer.wav in Resources */ = {isa = PBXBuildFile; fileRef = 52F7D0F724245E5300C9B563 /* buzzer.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		340148552427864500B3F284 /* sound.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sound.wav; sourceTree = "<group>"; };
 		521EF524242469A10014D511 /* Utillities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utillities.swift; sourceTree = "<group>"; };
 		52F30780242293B90015DE93 /* StopTouchingYourFace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StopTouchingYourFace.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52F30783242293B90015DE93 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -28,7 +29,6 @@
 		52F3078D242293BB0015DE93 /* StopTouchingYourFace.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StopTouchingYourFace.entitlements; sourceTree = "<group>"; };
 		52F3079A242424BD0015DE93 /* HandModel.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = HandModel.mlmodel; sourceTree = "<group>"; };
 		52F7D0F52424381300C9B563 /* ImageAspectFillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageAspectFillView.swift; sourceTree = "<group>"; };
-		52F7D0F724245E5300C9B563 /* buzzer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = buzzer.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,8 +66,8 @@
 				52F7D0F52424381300C9B563 /* ImageAspectFillView.swift */,
 				52F3079A242424BD0015DE93 /* HandModel.mlmodel */,
 				521EF524242469A10014D511 /* Utillities.swift */,
+				340148552427864500B3F284 /* sound.wav */,
 				52F30787242293BB0015DE93 /* Assets.xcassets */,
-				52F7D0F724245E5300C9B563 /* buzzer.wav */,
 				52F30789242293BB0015DE93 /* Main.storyboard */,
 				52F3078C242293BB0015DE93 /* Info.plist */,
 				52F3078D242293BB0015DE93 /* StopTouchingYourFace.entitlements */,
@@ -134,8 +134,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				52F7D0F824245E5300C9B563 /* buzzer.wav in Resources */,
 				52F30788242293BB0015DE93 /* Assets.xcassets in Resources */,
+				340148562427864500B3F284 /* sound.wav in Resources */,
 				52F3078B242293BB0015DE93 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
