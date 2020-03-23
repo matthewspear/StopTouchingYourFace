@@ -135,7 +135,7 @@ class ViewController: NSViewController {
     }
 
     private func setupAudioPlayer() {
-        let fileURL = URL(fileReferenceLiteralResourceName: "buzzer.wav")
+        let fileURL = URL(fileReferenceLiteralResourceName: "sound.wav")
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
             audioPlayer?.prepareToPlay()
