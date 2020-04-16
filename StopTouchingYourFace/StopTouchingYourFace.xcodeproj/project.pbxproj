@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		340148562427864500B3F284 /* sound.wav in Resources */ = {isa = PBXBuildFile; fileRef = 340148552427864500B3F284 /* sound.wav */; };
 		521EF525242469A10014D511 /* Utillities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521EF524242469A10014D511 /* Utillities.swift */; };
+		528BA97A242703C200BA0B58 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 528BA979242703C200BA0B58 /* Preferences.swift */; };
+		52AF6BB4242AF3810066D658 /* TrackingPreferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AF6BB3242AF3810066D658 /* TrackingPreferenceViewController.swift */; };
 		52F30784242293B90015DE93 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F30783242293B90015DE93 /* AppDelegate.swift */; };
 		52F30786242293B90015DE93 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F30785242293B90015DE93 /* ViewController.swift */; };
 		52F30788242293BB0015DE93 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 52F30787242293BB0015DE93 /* Assets.xcassets */; };
@@ -20,6 +22,8 @@
 /* Begin PBXFileReference section */
 		340148552427864500B3F284 /* sound.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sound.wav; sourceTree = "<group>"; };
 		521EF524242469A10014D511 /* Utillities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utillities.swift; sourceTree = "<group>"; };
+		528BA979242703C200BA0B58 /* Preferences.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
+		52AF6BB3242AF3810066D658 /* TrackingPreferenceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPreferenceViewController.swift; sourceTree = "<group>"; };
 		52F30780242293B90015DE93 /* StopTouchingYourFace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StopTouchingYourFace.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52F30783242293B90015DE93 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		52F30785242293B90015DE93 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -63,6 +67,8 @@
 			children = (
 				52F30783242293B90015DE93 /* AppDelegate.swift */,
 				52F30785242293B90015DE93 /* ViewController.swift */,
+				52AF6BB3242AF3810066D658 /* TrackingPreferenceViewController.swift */,
+				528BA979242703C200BA0B58 /* Preferences.swift */,
 				52F7D0F52424381300C9B563 /* ImageAspectFillView.swift */,
 				52F3079A242424BD0015DE93 /* HandModel.mlmodel */,
 				521EF524242469A10014D511 /* Utillities.swift */,
@@ -169,8 +175,10 @@
 			files = (
 				52F3079B242424BD0015DE93 /* HandModel.mlmodel in Sources */,
 				52F7D0F62424381300C9B563 /* ImageAspectFillView.swift in Sources */,
+				528BA97A242703C200BA0B58 /* Preferences.swift in Sources */,
 				521EF525242469A10014D511 /* Utillities.swift in Sources */,
 				52F30786242293B90015DE93 /* ViewController.swift in Sources */,
+				52AF6BB4242AF3810066D658 /* TrackingPreferenceViewController.swift in Sources */,
 				52F30784242293B90015DE93 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

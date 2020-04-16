@@ -20,6 +20,9 @@ class ViewController: NSViewController {
     @IBOutlet var previewView: NSView!
     @IBOutlet var maskImageView: ImageAspectFillView!
     @IBOutlet var movementIndicator: NSView!
+    @IBOutlet var fpsLabel: NSTextField!
+    @IBOutlet var distanceLabel: NSTextField!
+    @IBOutlet var coverageLabel: NSTextField!
 
     // AVCapture Session variables
     var session = AVCaptureSession()
@@ -53,18 +56,38 @@ class ViewController: NSViewController {
     // parameters
     var displayPreview = true
 
-    var frameRate = 2.0 // per second
+    lazy var model: VNCoreMLModel? = {
+        try? VNCoreMLModel(for: HandModel().model)
+    }()
 
-    let slowFrameRate = 5.0 // per second
-    let fastFrameRate = 15.0 // per second
+//    var frameRate = 2.0 // Preferences.slowFrameRate // per second
+//
+//    let slowFrameRate = preferences.slowFrameRate // per second
+//    let fastFrameRate = preferences.fastFrameRate // per second
+//
+//    let imageDistanceThreshold = preferences.imageDistanceThreshold // sensitivity (the lower the more sensitive)
+//
+//    let movementCoolOff = preferences.movementCooloff // seconds
+//    let touchCoolOff = preferences.touchCoolOff // seconds
 
-    let imageDistanceThreshold: Float = 7.5 // sensitivity (the lower the more sensitive)
+    var preferences = Preferences()
 
-    let movementCoolOff = 3.0 // seconds
-    let touchCoolOff = 5.0 // seconds
+    var frameRate = 2.0 // seconds
+
+    var slowFrameRate = 5.0 // per second
+    var fastFrameRate = 15.0 // per second
+
+    var imageDistanceThreshold: Float = 7.5 // sensitivity (the lower the more sensitive)
+    var handCoverageThreshold = 10.0 / 255.0
+
+    var movementCoolOff = 3.0 // seconds
+    var touchCoolOff = 5.0 // seconds
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        preferences.registerDefaults()
+        preferences.sync()
 
         setupPermissions()
         setupAudioPlayer()
@@ -72,6 +95,7 @@ class ViewController: NSViewController {
         movementIndicator.backgroundColor = #colorLiteral(red: 0.8549019694, green: 0.250980407, blue: 0.4784313738, alpha: 1)
         movementIndicator.layer?.cornerRadius = movementIndicator.frame.width / 2.0
         movementIndicator.alphaValue = 0.8
+        maskImageView.wantsLayer = true
         maskImageView.alphaValue = 0.8
 
         /*
@@ -94,6 +118,32 @@ class ViewController: NSViewController {
             }
             self.session.startRunning()
         }
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+
+        slowFrameRate = preferences.slowFrameRate
+        fastFrameRate = preferences.fastFrameRate
+
+        imageDistanceThreshold = preferences.imageDistanceThreshold
+        handCoverageThreshold = preferences.handCoverageThreshold
+
+        movementCoolOff = preferences.movementCooloff
+        touchCoolOff = preferences.touchCooloff
+    }
+
+    override func viewDidDisappear() {
+        super.viewDidDisappear()
+
+        preferences.slowFrameRate = slowFrameRate
+        preferences.fastFrameRate = fastFrameRate
+
+        preferences.imageDistanceThreshold = imageDistanceThreshold
+        preferences.handCoverageThreshold = handCoverageThreshold
+
+        preferences.movementCooloff = movementCoolOff
+        preferences.touchCooloff = touchCoolOff
     }
 
     private func setupPermissions() {
@@ -196,7 +246,7 @@ class ViewController: NSViewController {
 
             let dimensions = device.activeFormat.formatDescription.dimensions
 
-            print(device.activeFormat.videoSupportedFrameRateRanges)
+//            print(device.activeFormat.videoSupportedFrameRateRanges)
 
             captureDeviceResolution = CGSize(width: Int(dimensions.width), height: Int(dimensions.height))
 
@@ -422,8 +472,14 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     /// - Tag: PerformRequests
     // Handle delegate method callback on receiving a sample buffer.
     public func captureOutput(_: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from _: AVCaptureConnection) {
+        if (Date.timeIntervalSinceReferenceDate - lastFrame) < (1 / Double(frameRate)) { return }
 //        print(1.0 / (Date.timeIntervalSinceReferenceDate - lastFrame))
-        if (Date.timeIntervalSinceReferenceDate - lastFrame) < (1 / frameRate) { return }
+
+        let fps = 1 / (Date.timeIntervalSinceReferenceDate - lastFrame)
+
+        DispatchQueue.main.async {
+            self.fpsLabel.stringValue = String(format: "%.2f fps", fps)
+        }
 
         var requestHandlerOptions: [VNImageOption: AnyObject] = [:]
 
@@ -438,7 +494,7 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
 
         // feature printing
-        print(abs(lastMovement - Date.timeIntervalSinceReferenceDate))
+//        print(abs(lastMovement - Date.timeIntervalSinceReferenceDate))
 
         if Date.timeIntervalSinceReferenceDate > lastMovement {
             let startFeature = Date.timeIntervalSinceReferenceDate
@@ -472,18 +528,21 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 frameRate = slowFrameRate
                 DispatchQueue.main.async {
                     self.movementIndicator.backgroundColor = #colorLiteral(red: 0.8549019694, green: 0.250980407, blue: 0.4784313738, alpha: 1)
+                    self.distanceLabel.stringValue = String(format: "%.2f distance", distance)
+                    self.coverageLabel.stringValue = "skip hand detect"
                 }
                 return
             }
 
             print("Movement!")
-//            audioPlayer?.prepareToPlay()
+            audioPlayer?.prepareToPlay()
             lastMovement = Date.timeIntervalSinceReferenceDate + movementCoolOff
             frameRate = fastFrameRate
             lastFeaturePrint = nil
 
             DispatchQueue.main.async {
                 self.movementIndicator.backgroundColor = #colorLiteral(red: 0.5843137503, green: 0.8235294223, blue: 0.4196078479, alpha: 1)
+                self.distanceLabel.stringValue = "skip motion detect"
             }
         }
 
@@ -499,11 +558,11 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
         var predictionRequest: VNCoreMLRequest?
 
+        guard let model = model else { return }
+
         do {
-            let model = try VNCoreMLModel(for: HandModel().model)
             predictionRequest = VNCoreMLRequest(model: model)
             predictionRequest!.imageCropAndScaleOption = .centerCrop
-
             try visionRequestHandler.perform([predictionRequest!])
 
             guard let observation = predictionRequest!.results?.first as? VNPixelBufferObservation else {
@@ -520,18 +579,19 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
             CVPixelBufferLockBaseAddress(observation.pixelBuffer, [])
             var sum: Int = 0
-            let threshold = Int(112 * 112 * 10)
+//            let threshold = Int(112 * 112 * 10)
+            let threshold = Int(112 * 112 * 255 * handCoverageThreshold)
             var faceTouched = false
 
             // work bottom up
             for row in 0 ..< 112 {
                 for col in 0 ..< 112 {
-                    sum += pixelFrom(x: 112 - row, y: col, movieFrame: observation.pixelBuffer)
-
-                    if sum >= threshold {
-                        faceTouched = true
-                        break
-                    }
+                    let pixelValue = pixelFrom(x: 112 - row, y: col, movieFrame: observation.pixelBuffer)
+                    sum += pixelValue
+//                    if sum >= threshold {
+//                        faceTouched = true
+//                        break
+//                    }
                 }
             }
 
@@ -539,11 +599,18 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
             if faceTouched {
                 print("Face!")
-                AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert)
-//                audioPlayer?.play()
+//                AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert)
+                audioPlayer?.play()
                 lastMovement = Date.timeIntervalSinceReferenceDate + touchCoolOff
+                DispatchQueue.main.async {
+                    self.coverageLabel.stringValue = "reached threshold"
+                }
             } else {
                 audioPlayer?.stop()
+                let percentage = 100.0 * (Double(sum) / (255.0 * 112 * 112))
+                DispatchQueue.main.async {
+                    self.coverageLabel.stringValue = String(format: "%.2f%% hand", percentage)
+                }
             }
 
             if displayPreview {
