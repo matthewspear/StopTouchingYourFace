@@ -588,10 +588,10 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 for col in 0 ..< 112 {
                     let pixelValue = pixelFrom(x: 112 - row, y: col, movieFrame: observation.pixelBuffer)
                     sum += pixelValue
-//                    if sum >= threshold {
-//                        faceTouched = true
-//                        break
-//                    }
+                    if sum >= threshold {
+                        faceTouched = true
+                        break
+                    }
                 }
             }
 
