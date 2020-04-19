@@ -1,25 +1,25 @@
+# version
+--swiftversion 5.0
+
 # general
 --allman false
---binarygrouping none
 --closingparen balanced
 --commas always
+--comments indent
 --conflictmarkers reject
---decimalgrouping none
 --elseposition same-line
 --empty void
 --exponentcase lowercase
 --exponentgrouping disabled
 --fractiongrouping disabled
---fragment false
 --header ignore
---hexgrouping none
 --hexliteralcase uppercase
 --ifdef indent
 --importgrouping alphabetized
 --indent 4
 --indentcase false
 --linebreaks lf
---octalgrouping none
+--maxwidth none
 --operatorfunc spaced
 --patternlet hoist
 --ranges spaced
@@ -29,12 +29,13 @@
 --stripunusedargs always
 --trailingclosures
 --trimwhitespace always
---wraparguments before-first
---wrapcollections before-first
+--wraparguments preserve
+--wrapcollections preserve
 
 # file options
---exclude Carthage
+--exclude HandModel
 
 # rules
---disable andOperator,anyObjectProtocol
+--enable isEmpty
+--disable blankLinesAtStartOfScope, unusedArguments
 
